@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "yasserdo.awqat",
+  "name": "Awqat · أوقات",
+  "version": "1.1.0",
+  "author": "Yasser",
+  "license": "MIT",
+  "description": "Location-aware prayer times, a live countdown, and a quiet moment in your day.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Awqat",
+    "category": "Time",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "barPreset": "name-time",
+      "barFormat": "{name} {h}::{mm}:{ampm}",
+      "showIcon": true,
+      "notifications": false,
+      "sound": "none",
+      "volume": 35,
+      "locationMode": "auto",
+      "city": "Riyadh",
+      "method": "auto",
+      "school": "0",
+      "clock24": false
+    }
+  }
+}

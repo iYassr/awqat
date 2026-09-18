@@ -1,0 +1,2 @@
+module yasserdo.awqat
+singleton PrayerState 1.0 PrayerState.qml
