@@ -6,6 +6,16 @@ A native Omarchy bar plugin with automatic IP location, all five prayers and sun
 
 Click the Awqat prayer-arch icon and next prayer in the bar to open. The gear opens three settings tabs: **Location**, **Bar**, and **Alerts**. Click **12H / 24H** to switch time format. The refresh button (or middle-click on the bar widget) detects location again and refreshes the schedule.
 
+## Preview
+
+<img src="preview.png" alt="Awqat on Omarchy: Riyadh prayer times, Arabic labels, next-prayer countdown, and Hijri date" width="348">
+
+Actual Awqat panel on Omarchy. Colors follow the active desktop theme.
+
+### Logo concepts
+
+[Explore 36 logo concepts](docs/logo-gallery.html): download the HTML file and open it in a browser. It works offline, with day/night themes, six ink palettes, adjustable bar-size previews, favorites, and individual SVG downloads. The installed logo remains the current prayer arch until a new direction is chosen.
+
 ## Install
 
 Requires Omarchy’s Quickshell plugin system, system libcurl with HTTPS support, and the system timezone database. Desktop notifications use `notify-send`; optional audio uses `mpv`. The runtime helper is Rust; Python is not required. Node is only needed for JavaScript development tests.
