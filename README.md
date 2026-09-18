@@ -1,12 +1,14 @@
 # Awqat · Prayer Times for Omarchy
 
+<img src="logo.svg" alt="Awqat: dawn in a prayer arch" width="64" height="64">
+
 A native Omarchy bar plugin with automatic IP location, all five prayers and sunrise, Arabic labels, a live next-prayer countdown, Hijri date, and a compact, theme-aware panel with subtle accents.
 
-Click the Awqat clock icon and next prayer in the bar to open. The gear opens three settings tabs: **Location**, **Bar**, and **Alerts**. Click **12H / 24H** to switch time format. The refresh button (or middle-click on the bar widget) detects location again and refreshes the schedule.
+Click the Awqat prayer-arch icon and next prayer in the bar to open. The gear opens three settings tabs: **Location**, **Bar**, and **Alerts**. Click **12H / 24H** to switch time format. The refresh button (or middle-click on the bar widget) detects location again and refreshes the schedule.
 
 ## Install
 
-Requires Omarchy’s Quickshell plugin system, Python 3, curl, and timezone data. Desktop notifications use `notify-send`; optional audio uses `mpv`. These are already installed on this machine. Node is only needed for the JavaScript tests. No Python packages or background daemon are installed.
+Requires Omarchy’s Quickshell plugin system, Python 3, curl, and timezone data. Desktop notifications use `notify-send`; optional audio uses `mpv`. Node is only needed for the JavaScript tests. No Python packages or background daemon are installed.
 
 Copy this folder to `~/.config/omarchy/plugins/yasserdo.awqat/`, then run:
 
@@ -15,6 +17,26 @@ omarchy plugin validate ~/.config/omarchy/plugins/yasserdo.awqat
 omarchy-shell shell rescanPlugins
 omarchy plugin enable yasserdo.awqat
 ```
+
+The folder must contain `manifest.json` directly. Enabling adds the widget to the bar; the default section is **right**. Existing widgets and settings are preserved. This plugin targets the native Quickshell shell, rather than older Waybar configurations.
+
+## Omarchy integration
+
+Awqat follows the plugin contract shipped with Omarchy in `/usr/share/omarchy/shell/plugins/README.md` and checked by `omarchy plugin validate`:
+
+- A schema version 1 manifest declares the namespaced ID `yasserdo.awqat`, the `bar-widget` kind, and a relative `BarWidget.qml` entry point.
+- The entry point extends `Ui.BarWidget` and uses native `Ui.WidgetButton`, `Ui.Panel`, and `Ui.KeyboardPanel` components. Colors and spacing come from the shell theme.
+- Settings are stored inline in the bar entry through the shell API. The plugin is installed only under the user plugin directory; it does not modify packaged Omarchy files.
+- The icon is a small, static vector that inherits the surrounding text color. `logo.svg` contains the same geometry for documentation and reuse.
+- `allowMultiple: false` prevents duplicate entries. A shared singleton handles multiple monitors without running a separate daemon.
+
+## Troubleshooting and removal
+
+If the widget does not appear, run the validation and rescan commands above, then enable it again. After editing a nested QML component, use `omarchy restart shell` if the old version remains visible.
+
+For incorrect location, inspect the detected city and choose a manual city in **Location**. For network errors, use **Retry** or refresh; cached schedules remain available when possible. For silent audio, check **Alerts**, volume, the selected audio file, and that `mpv` is installed.
+
+Disable with `omarchy plugin disable yasserdo.awqat`. To uninstall, use `omarchy plugin remove yasserdo.awqat`; this removes the plugin folder, including any local code changes. Cache and alert history are stored separately at the paths documented below.
 
 ## Location and calculations
 
@@ -87,3 +109,7 @@ omarchy plugin validate .
 ```
 
 The suite includes 18 Python tests and 31 JavaScript checks covering cache isolation/limits/corruption, offline fallback, timezone/year rollover, partial API failure, formatting, retry backoff, duplicate suppression, late-wake behavior, notification/audio independence, and tone generation. The QML panel also needs a running Omarchy shell for visual verification. See [UX-AUDIT.md](UX-AUDIT.md) for the audit scope and practical limits.
+
+## License
+
+Plugin code and vector artwork are available under the [MIT license](LICENSE). Downloaded adhan recordings are external assets; see the audio attribution above.

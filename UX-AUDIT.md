@@ -5,7 +5,7 @@ Reviewed on the installed Omarchy desktop on 18 September 2026. This records imp
 | Area | Finding and implemented change | Verification |
 | --- | --- | --- |
 | Size and hierarchy | Reduced main panel content width from 400 to 300 logical units, rows from 43 to 30, and countdown card from 166 to 78. Removed the decorative banner and heavy accent outline. | Live screenshot at the user’s display scale. |
-| Identity | Replaced the generic crescent and an initially too-solid prototype with an open circular clock mark. Theme-aware vector rendering stays legible in the bar and header. | Bar, header and preview inspected in the running shell. |
+| Identity | A pointed prayer arch encloses a rising sun. The static vector inherits the surrounding theme color and uses the same geometry in the bar, header, previews and README. | Bar and header inspected in the running shell; QML parsing and shell logs checked after the icon update. |
 | Prayer scanability | English/Arabic names and aligned times; next prayer has a restrained accent. Sunrise never becomes the next prayer. Past entries remain readable and a stale schedule is labeled explicitly. | Live schedule plus next-prayer and rollover tests. |
 | Settings organization | Location, Bar, and Alerts tabs separate independent tasks while preserving in-panel drafts until Save. | All three tabs inspected. |
 | Format discovery | Each preset has a label and a separate live example, avoiding truncation from combining both on one line. An additional preview uses the actual vector icon. | Menu opened using Enter; visible examples inspected. |
