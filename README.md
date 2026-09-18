@@ -2,7 +2,18 @@
 
 <img src="logo.svg" alt="Awqat: dawn in a prayer arch" width="64" height="64">
 
-A native Omarchy bar plugin with automatic IP location, all five prayers and sunrise, Arabic labels, a live next-prayer countdown, Hijri date, and a compact, theme-aware panel with subtle accents.
+**A simple, lightweight prayer-times plugin for Omarchy, powered by Rust.**
+
+The everyday prayer features you need, in a quiet, compact bar widget:
+
+- **Automatic location** by IP, with manual city selection and calculation-method settings.
+- **All five prayers and sunrise**, Arabic labels, Hijri date, and a live next-prayer countdown.
+- **Your bar, your format:** ready-made layouts, live previews, custom tokens, and 12/24-hour time.
+- **Optional prayer alerts:** desktop notifications, gentle tones, full adhan, or your own local audio.
+- **Built to stay light:** a roughly 724 KiB native Rust helper, no persistent helper daemon, shared state across monitors, and a panel that loads only when opened.
+- **Resilient daily use:** cached schedules during network outages, automatic retries, and duplicate-alert suppression.
+
+The native QML interface follows your Omarchy theme. Rust handles schedules, caching, and alerts; Python is not required at runtime. The binary size above is for the ARM64 build and excludes shared system libraries, the Omarchy shell, and optional audio files.
 
 Click the Awqat prayer-arch icon and next prayer in the bar to open. The gear opens three settings tabs: **Location**, **Bar**, and **Alerts**. Click **12H / 24H** to switch time format. The refresh button (or middle-click on the bar widget) detects location again and refreshes the schedule.
 
