@@ -8,9 +8,15 @@ Click the Awqat prayer-arch icon and next prayer in the bar to open. The gear op
 
 ## Install
 
-Requires Omarchy’s Quickshell plugin system, Python 3, curl, and timezone data. Desktop notifications use `notify-send`; optional audio uses `mpv`. Node is only needed for the JavaScript tests. No Python packages or background daemon are installed.
+Requires Omarchy’s Quickshell plugin system, Python 3, curl 8.4 or newer, and timezone data. Desktop notifications use `notify-send`; optional audio uses `mpv`. Node is only needed for the JavaScript tests. No Python packages or background daemon are installed.
 
-Copy this folder to `~/.config/omarchy/plugins/yasserdo.awqat/`, then run:
+Install from GitHub:
+
+```sh
+omarchy plugin add https://github.com/iYassr/awqat --enable
+```
+
+For a local checkout, copy this folder to `~/.config/omarchy/plugins/yasserdo.awqat/`, then run:
 
 ```sh
 omarchy plugin validate ~/.config/omarchy/plugins/yasserdo.awqat
@@ -79,11 +85,11 @@ Alerts apply to the five prayers, not sunrise. They require a running Omarchy sh
 - One shared updater and clock across monitors; the panel is created on demand and destroyed after closing.
 - Closed-panel checks run at most once a minute, with an earlier wake at the next prayer boundary. An open countdown or `{remainingClock}` in the bar requests second updates.
 - Automatic location is checked every 30 minutes; manual locations need no recurring IP lookups. Dated prayer schedules are reused for seven days, so a steady location normally fetches only the next uncached day.
-- Network helpers exit after their work. Requests have connection/transfer deadlines; failures retry with delays from 1 to 15 minutes. Successful cached data remains available offline.
+- Network helpers exit after their work. HTTPS requests reject redirects and have size and connection/transfer limits; failures retry with delays from 1 to 15 minutes. Successful cached data remains available offline.
 - JSON cache is bounded to 96 files, 2 MiB, and 35 days. Audio is separate: two optional adhan tracks, each capped at 8 MiB, plus two tones under 80 KiB each. The delivery ledger retains at most 32 recent events.
 - Cache writes are atomic. Corrupt cached data is validated and refetched; cache write failures do not discard valid network responses. Concurrent helper invocations share a lock.
 
-On this machine, a cached helper invocation measured **0.048 seconds** and **24.7 MiB peak RSS**, released on exit. This is the helper measurement, not a measurement of the whole Omarchy shell.
+On this machine, a cached helper invocation measured **0.053 seconds median across five runs** and **25.2 MiB peak RSS**, released on exit. This is the helper measurement, not a measurement of the whole Omarchy shell.
 
 ## Commands
 
@@ -108,7 +114,7 @@ node tests/model.test.cjs
 omarchy plugin validate .
 ```
 
-The suite includes 18 Python tests and 31 JavaScript checks covering cache isolation/limits/corruption, offline fallback, timezone/year rollover, partial API failure, formatting, retry backoff, duplicate suppression, late-wake behavior, notification/audio independence, and tone generation. The QML panel also needs a running Omarchy shell for visual verification. See [UX-AUDIT.md](UX-AUDIT.md) for the audit scope and practical limits.
+The suite includes 32 Python tests and 39 JavaScript checks covering cache isolation/limits/corruption, offline fallback, timezone/year rollover, partial API failure, formatting, retry backoff, duplicate suppression, late-wake behavior, notification/audio independence, and tone generation. The QML panel also needs a running Omarchy shell for visual verification. See [UX-AUDIT.md](UX-AUDIT.md) for usability coverage, [SECURITY.md](SECURITY.md) for security boundaries and privacy, and [REVIEW.md](REVIEW.md) for reliability, performance, and code review findings.
 
 ## License
 

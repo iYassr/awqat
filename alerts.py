@@ -26,26 +26,42 @@ def claim_event(event, now=None):
     epoch = float(event.get("epoch", 0))
     if event.get("name") not in PRAYERS or not math.isfinite(epoch) or not 0 <= now - epoch <= 90:
         return False
-    STATE.mkdir(parents=True, exist_ok=True)
+    STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
+    STATE.chmod(0o700)
     with (STATE / "alerts.lock").open("a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+        deadline = time.monotonic() + 3
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Another alert is still being prepared. Please retry.")
+                time.sleep(0.05)
         ledger_path = STATE / "delivered.json"
         try:
+            if ledger_path.stat().st_size > 16384:
+                raise ValueError("Oversized delivery ledger")
             ledger = json.loads(ledger_path.read_text())
             if not isinstance(ledger, dict):
                 ledger = {}
-        except (OSError, ValueError):
+        except (OSError, ValueError, RecursionError):
             ledger = {}
-        ledger = {k: v for k, v in ledger.items() if isinstance(v, (float, int)) and now - v < 3 * 86400}
+        ledger = {k: v for k, v in ledger.items() if isinstance(v, (float, int)) and math.isfinite(v) and 0 <= now - v < 3 * 86400}
         key = event["name"] + ":" + str(int(epoch))
         if key in ledger:
             return False
         ledger[key] = now
         ledger = dict(sorted(ledger.items(), key=lambda pair: pair[1])[-32:])
-        with tempfile.NamedTemporaryFile(mode="w", dir=STATE, delete=False) as f:
-            json.dump(ledger, f)
-            temp = f.name
-        os.replace(temp, ledger_path)
+        temp = None
+        try:
+            with tempfile.NamedTemporaryFile(mode="w", dir=STATE, delete=False) as f:
+                temp = f.name
+                json.dump(ledger, f)
+            os.replace(temp, ledger_path)
+        finally:
+            if temp:
+                Path(temp).unlink(missing_ok=True)
         return True
 
 
@@ -83,20 +99,21 @@ def prepare_sound(settings):
         return str(path.resolve())
     if sound not in ADHANS and sound not in {"chime", "bell"}:
         raise ValueError("Unknown alert sound.")
-    CACHE.mkdir(parents=True, exist_ok=True)
+    CACHE.mkdir(parents=True, exist_ok=True, mode=0o700)
+    CACHE.chmod(0o700)
     path = CACHE / (sound + (".mp3" if sound in ADHANS else ".wav"))
-    if path.is_file() and path.stat().st_size > 1000:
+    if path.is_file() and 1000 < path.stat().st_size <= 8388608:
         return str(path)
     with tempfile.NamedTemporaryFile(dir=CACHE, prefix=".audio-", delete=False) as f:
         temp = Path(f.name)
     try:
         if sound in ADHANS:
-            result = subprocess.run(["curl", "-fsSL", "--connect-timeout", "5", "--max-time", "25",
+            result = subprocess.run(["curl", "-q", "-fsSL", "--max-redirs", "0", "--connect-timeout", "5", "--max-time", "25",
                 "--max-filesize", "8388608", "--proto", "=https", "--proto-redir", "=https",
                 "--output", str(temp), ADHANS[sound]], capture_output=True, timeout=28)
             with temp.open("rb") as f:
                 header = f.read(3)
-            if result.returncode or temp.stat().st_size < 1000 or not (header == b"ID3" or header[:1] == b"\xff"):
+            if result.returncode or not 1000 <= temp.stat().st_size <= 8388608 or not (header == b"ID3" or header[:1] == b"\xff"):
                 raise ValueError("Could not download the adhan. Check your connection and try Preview again.")
         else:
             make_tone(temp, sound)
@@ -140,6 +157,8 @@ def main():
     args = parser.parse_args()
     try:
         settings = json.loads(args.settings)
+        if not isinstance(settings, dict):
+            raise ValueError("Settings must be a JSON object.")
         if args.test_notification:
             subprocess.run(["notify-send", "--app-name=Awqat", "--icon=appointment-soon", "--expire-time=6000",
                             "--", "Awqat · Test notification", "Prayer-time notifications are ready."], check=True, timeout=5)

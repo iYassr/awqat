@@ -54,7 +54,7 @@ function barTemplate(settings) {
         "arabic": "{arabic} {time}", "time-name": "{time} · {name}", "icon": ""};
     var preset = settings.barPreset || "name-time";
     if (preset === "custom") return String(settings.barFormat || "{name} {h}::{mm}:{ampm}").slice(0, 200);
-    return templates[preset] === undefined ? templates["name-time"] : templates[preset];
+    return Object.prototype.hasOwnProperty.call(templates, preset) ? templates[preset] : templates["name-time"];
 }
 
 function formatBar(row, report, now, settings) {
@@ -71,7 +71,7 @@ function formatBar(row, report, now, settings) {
         remaining: countdown(row.epoch - now, true), remainingClock: countdown(row.epoch - now, false),
         city: report && report.location ? report.location.name : "", icon: "☾"};
     return template.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/g, function(match, key) {
-        return values[key] === undefined ? match : String(values[key]);
+        return Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match;
     });
 }
 
@@ -84,6 +84,11 @@ function duePrayer(report, now, alerted) {
             return event;
     }
     return null;
+}
+
+function audioVolume(value) {
+    var number = value === undefined ? 35 : Number(value);
+    return isFinite(number) ? Math.max(0, Math.min(100, number)) : 35;
 }
 
 function barOptions(row, report, now, settings) {

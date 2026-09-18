@@ -28,12 +28,19 @@ MAX_CACHE_BYTES = 2 * 1024 * 1024
 def get_json(url):
     # curl bounds DNS lookup as well as transfer time; urllib's timeout does
     # not bound the platform resolver. No command is passed through a shell.
-    result = subprocess.run(["curl", "-fsSL", "--connect-timeout", "5", "--max-time", "15",
+    result = subprocess.run(["curl", "-q", "-fsSL", "--proto", "=https", "--proto-redir", "=https",
+                             "--max-redirs", "0", "--max-filesize", "262144",
+                             "--connect-timeout", "5", "--max-time", "15",
                              "--user-agent", "OmarchyAwqat/1.0", url],
                             capture_output=True, text=True, timeout=18)
     if result.returncode:
         raise ValueError("Could not reach the location or prayer times service. Check your connection and retry.")
-    return json.loads(result.stdout)
+    if len(result.stdout.encode("utf-8")) > 262144:
+        raise ValueError("Service response is too large.")
+    data = json.loads(result.stdout)
+    if not isinstance(data, dict):
+        raise ValueError("Service returned an invalid response.")
+    return data
 
 
 def read_cache(key):
@@ -44,15 +51,16 @@ def read_cache(key):
         value = json.loads(path.read_text())
         if not isinstance(value, dict) or not isinstance(value.get("data"), dict):
             return None
-        if not isinstance(value.get("saved"), (float, int)) or not math.isfinite(value["saved"]):
+        if not isinstance(value.get("saved"), (float, int)) or not math.isfinite(value["saved"]) or value["saved"] > time.time() + 300:
             return None
         return value
-    except (OSError, ValueError, TypeError):
+    except (OSError, ValueError, TypeError, OverflowError, RecursionError):
         return None
 
 
 def write_cache(key, data):
-    CACHE.mkdir(parents=True, exist_ok=True)
+    CACHE.mkdir(parents=True, exist_ok=True, mode=0o700)
+    CACHE.chmod(0o700)
     path = CACHE / (hashlib.sha256(key.encode()).hexdigest() + ".json")
     temp = None
     try:
@@ -70,7 +78,7 @@ def cached(key, ttl, fetch, force=False, validate=None):
     if old and validate:
         try:
             validate(old["data"])
-        except (KeyError, ValueError, TypeError):
+        except (KeyError, ValueError, TypeError, IndexError, AttributeError, OverflowError):
             old = None
     if old and not force and 0 <= time.time() - old["saved"] < ttl:
         return old["data"], False
@@ -109,7 +117,8 @@ def prune_cache():
 def cache_lock():
     """Deduplicate requests from independent shell instances, with a deadline."""
     try:
-        CACHE.mkdir(parents=True, exist_ok=True)
+        CACHE.mkdir(parents=True, exist_ok=True, mode=0o700)
+        CACHE.chmod(0o700)
         lock = (CACHE / ".lock").open("a")
     except OSError:
         yield  # Cache is optional; a read-only filesystem must still work.
@@ -132,7 +141,7 @@ def cache_lock():
 
 def validate_location(loc):
     for key in ("name", "country", "countryCode", "timezone"):
-        if not isinstance(loc[key], str) or not loc[key]:
+        if not isinstance(loc[key], str) or not 0 < len(loc[key]) <= 200 or any(ord(c) < 32 for c in loc[key]):
             raise ValueError("Location service returned incomplete location details.")
     lat, lon = float(loc["latitude"]), float(loc["longitude"])
     if not (math.isfinite(lat) and math.isfinite(lon) and -90 <= lat <= 90 and -180 <= lon <= 180):
@@ -190,15 +199,20 @@ def validate_day(data, day):
     if data["date"]["gregorian"]["date"] != day.strftime("%d-%m-%Y"):
         raise ValueError("Prayer times service returned the wrong date.")
     # Reject malformed times before they reach the persistent cache.
+    previous = None
     for name in PRAYERS:
         value = datetime.fromisoformat(data["timings"][name])
         if value.tzinfo is None:
             raise ValueError("Prayer times are missing their timezone.")
-    if not isinstance(data["meta"]["method"]["name"], str):
+        # High-latitude schedules may place Isha just after midnight.
+        if not day <= value.date() <= day + timedelta(days=1) or (previous is not None and value <= previous):
+            raise ValueError("Prayer times have invalid dates or ordering.")
+        previous = value
+    if not isinstance(data["meta"]["method"]["name"], str) or not 0 < len(data["meta"]["method"]["name"]) <= 200:
         raise ValueError("Prayer times are missing the calculation method.")
     hijri = data["date"]["hijri"]
     for value in (hijri["day"], hijri["month"]["en"], hijri["year"]):
-        if not str(value):
+        if not isinstance(value, (str, int)) or not 0 < len(str(value)) <= 100:
             raise ValueError("Prayer times are missing the Hijri date.")
     return data
 
@@ -215,6 +229,8 @@ def day_rows(data):
 
 
 def report(settings, force=False, now=None):
+    if not isinstance(settings, dict):
+        raise ValueError("Settings must be a JSON object.")
     automatic = settings.get("locationMode", "auto") != "manual"
     query = str(settings.get("city", "Riyadh")).strip()[:150]
     location_key = "location:auto" if automatic else "location:city:" + query.casefold()

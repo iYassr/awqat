@@ -131,6 +131,31 @@ class PrayerTimesTests(unittest.TestCase):
         self.assertFalse(result["offline"])
         self.assertFalse(result["missingTomorrow"])
 
+    def test_malformed_cached_timezone_is_refetched(self):
+        p.write_cache("location:auto", dict(LOCATION, timezone="Invalid/Timezone"))
+        with patch.object(p, "detect_location", return_value=LOCATION) as fetch:
+            loc, stale = p.cached("location:auto", 1800, p.detect_location, validate=p.validate_location)
+        self.assertEqual(loc, LOCATION)
+        self.assertFalse(stale)
+        fetch.assert_called_once()
+
+    def test_future_cache_timestamp_is_not_trusted(self):
+        with patch.object(p.time, "time", return_value=9999999999):
+            p.write_cache("future", {"old": True})
+        self.assertIsNone(p.read_cache("future"))
+
+    def test_after_midnight_isha_is_supported(self):
+        day = datetime(2026, 9, 18).date()
+        data = fixture(day, LOCATION, "4", "0")
+        data["timings"]["Isha"] = "2026-09-19T00:15:00+03:00"
+        self.assertEqual(p.validate_day(data, day), data)
+
+    def test_deeply_nested_cache_is_discarded(self):
+        import hashlib
+        path = p.CACHE / (hashlib.sha256(b"nested").hexdigest() + ".json")
+        path.write_text('[' * 2000 + '0' + ']' * 2000)
+        self.assertIsNone(p.read_cache("nested"))
+
 
 
 if __name__ == "__main__":

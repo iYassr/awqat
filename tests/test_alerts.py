@@ -69,6 +69,17 @@ class AlertTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(run.call_count, 1)
 
+    def test_busy_ledger_lock_has_a_deadline(self):
+        with patch.object(a.fcntl, "flock", side_effect=BlockingIOError), patch.object(a.time, "monotonic", side_effect=[0, 4]):
+            with self.assertRaises(TimeoutError):
+                a.claim_event({"name": "Fajr", "epoch": 1000}, now=1001)
+
+    def test_failed_ledger_write_cleans_temporary_file(self):
+        with patch.object(a.os, "replace", side_effect=OSError("disk full")):
+            with self.assertRaises(OSError):
+                a.claim_event({"name": "Fajr", "epoch": 1000}, now=1001)
+        self.assertEqual([path.name for path in a.STATE.iterdir()], ["alerts.lock"])
+
 
 if __name__ == "__main__":
     unittest.main()

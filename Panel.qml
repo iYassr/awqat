@@ -100,8 +100,8 @@ Ui.Panel {
                             spacing: Style.space(8)
                             anchors.verticalCenter: parent.verticalCenter
                             AwqatIcon { ink: root.ink; opacity: 0.7; width: Style.space(23); height: width; anchors.verticalCenter: parent.verticalCenter }
-                            Text { text: "Awqat"; color: root.ink; font.family: root.sans; font.pixelSize: Style.space(16); font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
-                            Text { text: "أوقات"; color: root.muted; font.family: "Noto Naskh Arabic"; font.pixelSize: Style.space(16); anchors.verticalCenter: parent.verticalCenter }
+                            Text { textFormat: Text.PlainText; text: "Awqat"; color: root.ink; font.family: root.sans; font.pixelSize: Style.space(16); font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
+                            Text { textFormat: Text.PlainText; text: "أوقات"; color: root.muted; font.family: "Noto Naskh Arabic"; font.pixelSize: Style.space(16); anchors.verticalCenter: parent.verticalCenter }
                         }
                         Row {
                             anchors.right: parent.right
@@ -129,11 +129,13 @@ Ui.Panel {
                             width: parent.width - autoBadge.width - Style.space(12)
                             spacing: Style.space(5)
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width; elide: Text.ElideRight
                                 text: root.report ? root.report.location.name : (root.loading ? "Finding your location…" : "Your daily prayer companion")
                                 color: root.ink; font.family: root.sans; font.pixelSize: Style.space(12); font.weight: Font.Medium
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width; elide: Text.ElideRight
                                 text: root.report ? root.report.dateLabel : "Prayer times for wherever you are"
                                 color: root.muted; font.family: root.sans; font.pixelSize: Style.space(11)
@@ -145,6 +147,7 @@ Ui.Panel {
                             width: badgeText.implicitWidth + Style.space(16); height: Style.space(18); radius: height / 2
                             color: "transparent"
                             Text {
+                                textFormat: Text.PlainText
                                 id: badgeText; anchors.centerIn: parent
                                 text: root.loading ? "Updating…" : (root.report && !root.report.location.automatic ? "Manual" : "Auto · IP")
                                 color: root.muted; font.family: root.sans; font.pixelSize: Style.space(10)
@@ -163,15 +166,18 @@ Ui.Panel {
                             anchors.margins: Style.space(11)
                             spacing: Style.space(4)
                             Text {
+                                textFormat: Text.PlainText
                                 text: root.next ? root.next.name + " in" : "Next prayer"
                                 color: root.muted; font.family: root.sans; font.pixelSize: Style.space(11)
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 text: root.next ? Model.countdown(root.next.epoch - root.now, false) : "— : — : —"
                                 color: root.ink; font.family: "Adwaita Mono"; font.pixelSize: Style.space(24)
                             }
                         }
                         Text {
+                            textFormat: Text.PlainText
                             anchors.right: parent.right; anchors.rightMargin: Style.space(11)
                             anchors.verticalCenter: parent.verticalCenter
                             text: root.next ? Model.timeLabel(root.next, root.clock24) + (root.report && root.next.epoch >= root.report.dayEnds ? "\ntomorrow" : "") : (root.loading ? "Loading…" : "Refresh to load")
@@ -196,7 +202,7 @@ Ui.Panel {
                         visible: !root.editing
                         Item {
                             width: parent.width; height: Style.space(20)
-                            Text { text: root.report && root.now >= root.report.dayEnds ? "Saved schedule" : "Today"; color: root.muted; font.family: root.sans; font.pixelSize: Style.space(10); font.letterSpacing: 0; anchors.verticalCenter: parent.verticalCenter }
+                            Text { textFormat: Text.PlainText; text: root.report && root.now >= root.report.dayEnds ? "Saved schedule" : "Today"; color: root.muted; font.family: root.sans; font.pixelSize: Style.space(10); font.letterSpacing: 0; anchors.verticalCenter: parent.verticalCenter }
                             Ui.Button {
                                 anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
                                 text: root.clock24 ? "24H" : "12H"; fontSize: Style.space(10); foreground: root.muted; focusable: true
@@ -223,18 +229,21 @@ Ui.Panel {
                                         color: prayerRow.upcoming ? root.accent : Qt.alpha(root.ink, prayerRow.passed ? 0.15 : 0.35)
                                     }
                                     Text {
+                                        textFormat: Text.PlainText
                                         anchors.left: parent.left; anchors.leftMargin: Style.space(24); anchors.verticalCenter: parent.verticalCenter
                                         text: prayerRow.modelData.name
                                         color: prayerRow.upcoming ? root.accent : Qt.alpha(root.ink, prayerRow.passed ? 0.5 : 0.9)
                                         font.family: root.sans; font.pixelSize: Style.space(12); font.weight: prayerRow.upcoming ? Font.DemiBold : Font.Normal
                                     }
                                     Text {
+                                        textFormat: Text.PlainText
                                         anchors.right: timeLabel.left; anchors.rightMargin: Style.space(16); anchors.verticalCenter: parent.verticalCenter
                                         text: prayerRow.modelData.arabic
                                         font.family: "Noto Naskh Arabic"; font.pixelSize: Style.space(15)
                                         color: prayerRow.upcoming ? Qt.alpha(root.accent, 0.85) : Qt.alpha(root.ink, 0.35)
                                     }
                                     Text {
+                                        textFormat: Text.PlainText
                                         id: timeLabel
                                         anchors.right: parent.right; anchors.rightMargin: Style.space(14); anchors.verticalCenter: parent.verticalCenter
                                         text: Model.timeLabel(prayerRow.modelData, root.clock24)
@@ -245,6 +254,7 @@ Ui.Panel {
                             }
                         }
                         Text {
+                            textFormat: Text.PlainText
                             visible: !root.report; width: parent.width; horizontalAlignment: Text.AlignHCenter
                             topPadding: Style.space(20); bottomPadding: Style.space(20)
                             text: root.loading ? "Fetching your local prayer times…" : "Your schedule will appear here."
@@ -282,6 +292,7 @@ Ui.Panel {
                             onAccepted: root.saveSettings()
                         }
                         Text {
+                            textFormat: Text.PlainText
                             width: parent.width; wrapMode: Text.WordWrap
                             text: "Automatic location follows your public IP and checks every 30 minutes. A VPN may change the detected city."
                             font.family: root.sans; font.pixelSize: Style.space(12); color: root.muted
@@ -322,15 +333,18 @@ Ui.Panel {
                                 Accessible.name: "Custom bar format"
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width; visible: root.customFormatError !== ""; wrapMode: Text.WordWrap
                                 text: root.customFormatError; color: root.accent; font.family: root.sans; font.pixelSize: Style.space(11)
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width; visible: barPreset.value === "custom"; wrapMode: Text.WordWrap
                                 text: "{name}  {arabic}  {short}  {time}  {time24}  {time12}  {h}  {hh}  {H}  {HH}  {mm}  {ampm}  {AMPM}  {remaining}  {remainingClock}  {city}  {icon}"
                                 color: root.muted; font.family: "Adwaita Mono"; font.pixelSize: Style.space(10)
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width; visible: barPreset.value === "custom"; wrapMode: Text.WordWrap
                                 text: "Use any order or separators. h/hh = 12-hour; H/HH = 24-hour. Doubled letters add a leading zero. RemainingClock shows seconds."
                                 color: root.muted; font.family: root.sans; font.pixelSize: Style.space(11)
@@ -345,7 +359,7 @@ Ui.Panel {
                                 fontFamily: root.sans; titleSize: Style.space(12)
                                 onClicked: checked = !checked
                             }
-                            Text { text: "LIVE PREVIEW"; color: root.muted; font.family: root.sans; font.pixelSize: Style.space(10) }
+                            Text { textFormat: Text.PlainText; text: "LIVE PREVIEW"; color: root.muted; font.family: root.sans; font.pixelSize: Style.space(10) }
                             Rectangle {
                                 width: parent.width; height: previewText.implicitHeight + Style.space(22)
                                 radius: Style.space(6); color: Qt.alpha(root.ink, 0.04)
@@ -391,7 +405,7 @@ Ui.Panel {
                             }
                             Column {
                                 width: parent.width; spacing: Style.space(6); visible: soundChoice.value !== "none"
-                                Text { text: "Volume · " + Math.round(volume.value) + "%"; color: root.muted; font.family: root.sans; font.pixelSize: Style.space(11) }
+                                Text { textFormat: Text.PlainText; text: "Volume · " + Math.round(volume.value) + "%"; color: root.muted; font.family: root.sans; font.pixelSize: Style.space(11) }
                                 Ui.PanelSlider {
                                     id: volume; width: parent.width; bar: root.bar
                                     minimum: 0; maximum: 100; step: 5; integer: true; value: 35
@@ -421,11 +435,13 @@ Ui.Panel {
                                 }
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width; wrapMode: Text.WordWrap
                                 text: "Alerts run while Omarchy is running and your device is awake. Sunrise is excluded. Missed prayers older than 90 seconds stay silent. Adhan recordings download once, then work offline."
                                 color: root.muted; font.family: root.sans; font.pixelSize: Style.space(11)
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 visible: root.hostWidget && root.hostWidget.audioError !== ""
                                 width: parent.width; wrapMode: Text.WordWrap
                                 text: root.hostWidget ? root.hostWidget.audioError : ""
@@ -441,6 +457,8 @@ Ui.Panel {
                     }
 
                     Text {
+
+                        textFormat: Text.PlainText
                         width: parent.width
                         visible: text !== ""
                         text: root.hostWidget && root.hostWidget.error ? root.hostWidget.error : (root.hostWidget && root.hostWidget.audioError ? "Audio: " + root.hostWidget.audioError : (root.report && root.now >= root.report.dayEnds ? "Updating for the new day…" : (root.report && root.report.offline ? "Offline · showing saved times" + (root.report.locationStale ? " and last detected location" : "") : (root.report && root.report.missingTomorrow ? "Tomorrow’s times are unavailable. Retrying shortly." : ""))))
@@ -460,11 +478,13 @@ Ui.Panel {
                     Column {
                         width: parent.width; spacing: Style.space(5)
                         Text {
+                            textFormat: Text.PlainText
                             width: parent.width; horizontalAlignment: Text.AlignHCenter
                             text: root.report ? root.report.hijri : "Every prayer, a new beginning."
                             color: Qt.alpha(root.ink, 0.65); font.family: root.sans; font.pixelSize: Style.space(10)
                         }
                         Text {
+                            textFormat: Text.PlainText
                             width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
                             text: root.report ? root.report.method.replace(" University, Makkah", " · Makkah") + " · " + root.report.location.timezone : "Location by IP · Times by AlAdhan"
                             color: Qt.alpha(root.ink, 0.35); font.family: root.sans; font.pixelSize: Style.space(9)

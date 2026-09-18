@@ -37,6 +37,8 @@ Item {
         report = null
         error = ""
         failures = 0
+        queuedEvent = null
+        stopAudio()
         refreshDebounce.restart()
     }
     function touch() { now = Date.now() / 1000 }
@@ -62,6 +64,8 @@ Item {
         if (!pendingAudioFile) return
         intentionalStop = false
         player.command = ["mpv", "--no-config", "--no-video", "--really-quiet", "--no-terminal",
+            "--load-scripts=no", "--autoload-files=no", "--access-references=no", "--ytdl=no",
+            "--demuxer-lavf-o=protocol_whitelist=file",
             "--volume=" + playbackVolume, "--", pendingAudioFile]
         pendingAudioFile = ""
         player.running = true
@@ -81,7 +85,7 @@ Item {
         }
         if (preview) stopAudio()
         audioError = ""
-        playbackVolume = Math.max(0, Math.min(100, Number(settings.volume === undefined ? 35 : settings.volume)))
+        playbackVolume = Model.audioVolume(settings.volume)
         playPrepared = preview || event !== null
         var args = ["python3", "-B", decodeURIComponent(Qt.resolvedUrl("alerts.py").toString().replace(/^file:\/\//, "")), "--settings", JSON.stringify(settings)]
         if (event) args.push("--event", JSON.stringify(Object.assign({}, event, {city: report ? report.location.name : ""})))
@@ -112,6 +116,23 @@ Item {
         retryAt = Date.now() / 1000 + Model.retryDelay(failures)
     }
     Timer { id: refreshDebounce; interval: 200; onTriggered: root.refresh(false) }
+    Timer {
+        interval: 110000
+        running: fetcher.running
+        onTriggered: {
+            fetcher.running = false
+            root.failed("Location update timed out. Retrying automatically.")
+        }
+    }
+    Timer {
+        interval: 40000
+        running: alertProc.running
+        onTriggered: {
+            root.playPrepared = false
+            alertProc.running = false
+            root.audioError = "Alert preparation timed out. Please retry."
+        }
+    }
     Timer {
         // The bar only changes at a prayer boundary. Cap sleep at one minute
         // to notice clock changes and resume from suspend; seconds are UI-only.
