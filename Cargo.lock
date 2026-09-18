@@ -4,10 +4,11 @@ version = 4
 
 [[package]]
 name = "awqat-core"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "curl",
  "jiff",
+ "libc",
  "serde",
  "serde_json",
  "sha2",

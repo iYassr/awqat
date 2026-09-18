@@ -5,3 +5,5 @@ __pycache__/
 /target/
 /bin/awqat-core
 /bin/.awqat-core.*
+/bin/.awqat-sources.*
+/bin/source-checksums

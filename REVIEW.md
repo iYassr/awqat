@@ -1,6 +1,6 @@
 # Reliability, performance, and code review
 
-Reviewed on 18 September 2026; updated after migrating the helper to Rust 1.2.0. Security findings and trust boundaries are in [SECURITY.md](SECURITY.md); visual and interaction coverage is in [UX-AUDIT.md](UX-AUDIT.md).
+Reviewed on 18 September 2026; updated after migrating the helper to Rust, with a further security/size review in 1.2.1. Security findings and trust boundaries are in [SECURITY.md](SECURITY.md); visual and interaction coverage is in [UX-AUDIT.md](UX-AUDIT.md).
 
 ## Reliability
 
@@ -20,7 +20,7 @@ A comparison on the development machine (Linux ARM64) used a small C parent proc
 | Median elapsed time | 7.96 ms | 59.04 ms |
 | Maximum child RSS | 10.70 MiB | 25.17 MiB |
 
-The Rust release binary is approximately 760 KiB. Release settings use size optimization, LTO, one codegen unit, symbol stripping, and abort-on-panic. `ldd` verified dynamic linking to the installed libcurl; Jiff reads the system timezone database without embedding a database. No Rust async runtime or persistent helper is used. Network requests use libcurl directly, avoiding a curl subprocess.
+The first Rust release binary was approximately 764 KiB. Version 1.2.1 reduces it to 724 KiB and adds a source-hash check before execution. Its launcher-inclusive median measured 10.55 ms with 10.78 MiB peak RSS; the table records the earlier migration baseline. See [SECURITY-REVIEW.md](SECURITY-REVIEW.md) for the newer audit. Release settings use size optimization, LTO, one codegen unit, symbol stripping, and abort-on-panic. `ldd` verified dynamic linking to the installed libcurl; Jiff reads the system timezone database without embedding a database. No Rust async runtime or persistent helper is used. Network requests use libcurl directly, avoiding a curl subprocess.
 
 These measurements cover the helper and its shell launcher, not total Quickshell memory, cold network latency, or mpv playback. They exclude the compiler and Cargo cache. RSS includes touched shared libraries. A Python-parent benchmark initially overstated native memory; the C-parent measurement avoids that inherited peak. The results are local samples, not a general performance guarantee.
 
@@ -36,7 +36,7 @@ The Rust suite ports the earlier behavioral checks and adds actual concurrent cl
 
 ## Verification
 
-- 34 Rust tests and 39 JavaScript assertions passed.
+- 37 Rust unit tests, a separate real HTTPS integration test (nine assertions), and 39 JavaScript assertions passed.
 - `cargo fmt --check` and strict Clippy passed. All QML files parsed; Omarchy manifest validation and Git whitespace checks passed.
 - Live shell integration passed with the Rust binary: six timetable rows, a loaded panel, muted adhan playback, working Stop, and no Awqat runtime errors.
 - Real cached adhan decoding succeeded with restricted player options. A local playlist disguised as MP3 was rejected.

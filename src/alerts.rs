@@ -7,7 +7,6 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
-    fs,
     io::Read,
     path::Path,
     process::{Command, Stdio},
@@ -138,7 +137,7 @@ pub fn prepare_sound(settings: &Settings, cache: &Path, network: &impl Network) 
         "{sound}.{}",
         if url.is_some() { "mp3" } else { "wav" }
     ));
-    if let Ok(mut file) = fs::File::open(&path) {
+    if let Ok(mut file) = storage::open_regular(&path) {
         let meta = file.metadata()?;
         let mut header = [0; 12];
         if meta.is_file()

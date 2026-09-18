@@ -595,3 +595,52 @@ fn failed_atomic_write_leaves_no_temporary_file() {
     assert!(storage::atomic_write(&destination, b"data").is_err());
     assert_eq!(fs::read_dir(temp.path()).unwrap().count(), 1);
 }
+
+#[test]
+fn symlinked_private_directory_is_not_chmodded() {
+    let temp = tempfile::tempdir().unwrap();
+    let target = temp.path().join("outside");
+    fs::create_dir(&target).unwrap();
+    fs::set_permissions(&target, fs::Permissions::from_mode(0o755)).unwrap();
+    let link = temp.path().join("cache");
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+    assert!(storage::private_dir(&link).is_err());
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        0o755
+    );
+}
+
+#[test]
+fn symlinked_cache_and_lock_files_are_rejected() {
+    let temp = tempfile::tempdir().unwrap();
+    let target = temp.path().join("outside.json");
+    fs::write(&target, b"{}").unwrap();
+    let link = temp.path().join("data.json");
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+    assert!(storage::read_bounded(&link, 100).is_err());
+    std::os::unix::fs::symlink(&target, temp.path().join("lock")).unwrap();
+    assert!(storage::lock(temp.path(), "lock", 0).is_err());
+    assert_eq!(fs::read(&target).unwrap(), b"{}");
+}
+
+#[test]
+fn fifo_cache_and_audio_do_not_block() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("chime.wav");
+    assert!(
+        std::process::Command::new("mkfifo")
+            .arg(&path)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(storage::read_bounded(&path, 100).is_err());
+    assert!(storage::lock(temp.path(), "chime.wav", 0).is_err());
+    let settings = Settings {
+        sound: "chime".into(),
+        ..Settings::default()
+    };
+    alerts::prepare_sound(&settings, temp.path(), &Fake::default()).unwrap();
+    assert!(fs::metadata(&path).unwrap().is_file());
+}

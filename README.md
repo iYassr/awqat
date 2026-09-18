@@ -20,7 +20,7 @@ cd ~/.config/omarchy/plugins/yasserdo.awqat
 omarchy plugin enable yasserdo.awqat
 ```
 
-If the installer offers to enable the plugin, finish the build before using it. `build.sh` downloads the dependencies pinned in `Cargo.lock`, creates an optimized native `bin/awqat-core`, and removes its temporary build output. The compiler and Cargo registry cache are development tools; they are not part of the runtime helper. No background daemon or automatic build/download hook is installed.
+If the installer offers to enable the plugin, finish the build before using it. `build.sh` downloads the dependencies pinned in `Cargo.lock`, creates an optimized native `bin/awqat-core`, and removes its temporary build output. The launcher checks source hashes before running the compiled helper, so source updates require a rebuild. The compiler and Cargo registry cache are development tools; they are not part of the runtime helper. No background daemon or automatic build/download hook is installed.
 
 For a local checkout, copy this folder to `~/.config/omarchy/plugins/yasserdo.awqat/`, run `./build.sh` there, then run:
 
@@ -106,7 +106,7 @@ Alerts apply to the five prayers, not sunrise. They require a running Omarchy sh
 - JSON cache is bounded to 96 files, 2 MiB, and 35 days. Audio is separate: two optional adhan tracks, each capped at 8 MiB, plus two tones under 80 KiB each. The delivery ledger retains at most 32 recent events.
 - Cache writes are atomic. Corrupt cached data is validated and refetched; cache write failures do not discard valid network responses. Concurrent helper invocations share a lock.
 
-A local ARM64 comparison across 15 warm runs measured **8 ms median / 10.7 MiB peak RSS** for the Rust helper through its launcher, versus **59 ms / 25.2 MiB** for the previous Python helper. The optimized binary is approximately **760 KiB**, dynamically linked to the system libcurl. This measures temporary helper usage, not the whole Omarchy shell, compiler, network transfer, or audio playback. See [REVIEW.md](REVIEW.md) for methodology and limits.
+A local ARM64 comparison across 15 warm runs measured **11 ms median / 10.8 MiB peak RSS** for the Rust helper through its launcher, versus **59 ms / 25.2 MiB** for the previous Python helper. The optimized binary is approximately **724 KiB**, dynamically linked to the system libcurl. This measures temporary helper usage, not the whole Omarchy shell, compiler, network transfer, or audio playback. See [REVIEW.md](REVIEW.md) for methodology and limits.
 
 ## Commands
 
@@ -133,7 +133,7 @@ node tests/model.test.cjs
 omarchy plugin validate .
 ```
 
-The suite includes 34 Rust tests and 39 JavaScript checks covering cache isolation/limits/corruption, offline fallback, timezone/year rollover, partial API failure, formatting, retry backoff, duplicate suppression, late-wake behavior, disabled alerts, private storage, atomic-write cleanup, and tone generation. The QML panel also needs a running Omarchy shell for visual verification. See [UX-AUDIT.md](UX-AUDIT.md) for usability coverage, [SECURITY.md](SECURITY.md) for security boundaries and privacy, and [REVIEW.md](REVIEW.md) for reliability, performance, and code review findings.
+The standard suite includes 37 Rust tests and 39 JavaScript checks covering cache isolation/limits/corruption, offline fallback, timezone/year rollover, partial API failure, formatting, retry backoff, duplicate suppression, late-wake behavior, disabled alerts, private storage, atomic-write cleanup, and tone generation. An additional HTTPS integration test covers certificates, hostnames, redirects, timeouts, and response-size limits. Run `python3 tests/security_transport.py` with Python 3 and OpenSSL installed; these are optional test tools, not runtime requirements. The QML panel also needs a running Omarchy shell for visual verification. See [UX-AUDIT.md](UX-AUDIT.md) for usability coverage, [SECURITY.md](SECURITY.md) for security boundaries and privacy, and [REVIEW.md](REVIEW.md) for reliability, performance, and code review findings.
 
 ## License
 

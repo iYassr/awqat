@@ -12,8 +12,25 @@ use std::{
 
 pub fn private_dir(path: &Path) -> Result<()> {
     fs::create_dir_all(path)?;
-    fs::set_permissions(path, fs::Permissions::from_mode(0o700))?;
+    // Open the directory itself: never chmod a symlink target.
+    let directory = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW)
+        .open(path)?;
+    directory.set_permissions(fs::Permissions::from_mode(0o700))?;
     Ok(())
+}
+
+pub fn open_regular(path: &Path) -> Result<File> {
+    // O_NONBLOCK prevents FIFOs from hanging before metadata can be checked.
+    let file = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)?;
+    if !file.metadata()?.is_file() {
+        return Err("Expected a regular data file".into());
+    }
+    Ok(file)
 }
 
 pub fn atomic_write(path: &Path, bytes: &[u8]) -> Result<()> {
@@ -29,7 +46,7 @@ pub fn atomic_write(path: &Path, bytes: &[u8]) -> Result<()> {
 }
 
 pub fn read_bounded(path: &Path, limit: usize) -> Result<Vec<u8>> {
-    let file = File::open(path)?;
+    let file = open_regular(path)?;
     if !file.metadata()?.is_file() || file.metadata()?.len() > limit as u64 {
         return Err("Invalid or oversized data file".into());
     }
@@ -47,7 +64,11 @@ pub fn lock(path: &Path, name: &str, seconds: u64) -> Result<Option<File>> {
         .create(true)
         .append(true)
         .mode(0o600)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
         .open(path.join(name))?;
+    if !file.metadata()?.is_file() {
+        return Err("Expected a regular lock file".into());
+    }
     let deadline = Instant::now() + Duration::from_secs(seconds);
     loop {
         match file.try_lock() {

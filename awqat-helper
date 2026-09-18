@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 plugin_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
-if [ -x "$plugin_dir/bin/awqat-core" ]; then
+if [ -x "$plugin_dir/bin/awqat-core" ] && [ -f "$plugin_dir/bin/source-checksums" ] &&
+    (cd "$plugin_dir" && sha256sum --check --status bin/source-checksums); then
   exec "$plugin_dir/bin/awqat-core" "$@"
 fi
-printf '%s\n' '{"ok":false,"error":"Awqat needs its Rust helper. Run build.sh in the Awqat plugin folder, then refresh."}'
+printf '%s\n' '{"ok":false,"error":"Awqat needs a current Rust helper. Run build.sh in the Awqat plugin folder, then refresh."}'

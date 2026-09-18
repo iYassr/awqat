@@ -91,7 +91,12 @@ fn run() -> Result<Value> {
         "times" => {
             let _lock = storage::lock(&cache.root, ".lock", 50).or_else(|error| {
                 // A full/read-only cache must not prevent a live schedule.
-                if error.downcast_ref::<std::io::Error>().is_some() {
+                if error.downcast_ref::<std::io::Error>().is_some_and(|e| {
+                    matches!(
+                        e.raw_os_error(),
+                        Some(libc::EACCES | libc::EROFS | libc::ENOSPC | libc::EDQUOT)
+                    )
+                }) {
                     Ok(None)
                 } else {
                     Err(error)
@@ -102,6 +107,9 @@ fn run() -> Result<Value> {
             Ok(report)
         }
         "alerts" => {
+            if !["none", "custom"].contains(&settings.sound.as_str()) {
+                storage::private_dir(&cache.root)?;
+            }
             if test_notification {
                 alerts::test_notification()?;
                 return Ok(json!({"ok":true,"file":""}));
