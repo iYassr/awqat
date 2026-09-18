@@ -132,6 +132,7 @@ cargo clippy --locked --target-dir /tmp/awqat-test-build --all-targets -- -D war
 cargo fmt --check
 node tests/model.test.cjs
 python3 tests/reliability_cli.py  # Optional CLI regressions; build the helper first
+python3 tests/qml_lifecycle.py    # Isolated QML lifecycle checks; requires Quickshell
 omarchy plugin validate .
 ```
 
@@ -141,4 +142,4 @@ The standard suite includes 41 Rust tests and 39 JavaScript checks covering cach
 
 Plugin code and vector artwork are available under the [MIT license](../LICENSE). Downloaded adhan recordings are external assets; see the audio attribution above.
 
-The [plugin comparison](../PLUGIN-COMPARISON.md) records lessons from popular community plugins and the reliability changes applied in 1.2.2. Python is optional for the CLI and HTTPS test harnesses only.
+The [plugin comparison](../PLUGIN-COMPARISON.md) records lessons from popular community plugins and the reliability changes applied in 1.2.2. Python is optional for the CLI, HTTPS, and QML lifecycle test harnesses only.

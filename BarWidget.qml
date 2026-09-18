@@ -27,6 +27,7 @@ Ui.BarWidget {
     property bool pendingSettings: false
     property string pendingPage: "location"
     property bool countedOpen: false
+    property bool stateAttached: false
     readonly property bool opened: panelLoader.item ? panelLoader.item.opened : false
     readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing : false
 
@@ -67,9 +68,20 @@ Ui.BarWidget {
         panelLoader.item.hostWidget = root
     }
     onBarChanged: injectPanel()
-    onSettingsChanged: { Core.PrayerState.configure(configuration()); Core.PrayerState.preferences(settings) }
-    Component.onCompleted: { Core.PrayerState.configure(configuration()); Core.PrayerState.preferences(settings) }
-    Component.onDestruction: if (countedOpen) Core.PrayerState.openPanels = Math.max(0, Core.PrayerState.openPanels - 1)
+    onSettingsChanged: if (stateAttached) {
+        Core.PrayerState.configure(configuration())
+        Core.PrayerState.preferences(settings)
+    }
+    Component.onCompleted: {
+        Core.PrayerState.attach()
+        stateAttached = true
+        Core.PrayerState.configure(configuration())
+        Core.PrayerState.preferences(settings)
+    }
+    Component.onDestruction: {
+        if (countedOpen) Core.PrayerState.openPanels = Math.max(0, Core.PrayerState.openPanels - 1)
+        if (stateAttached) Core.PrayerState.detach()
+    }
     onOpenedChanged: {
         if (opened !== countedOpen) {
             Core.PrayerState.openPanels = Math.max(0, Core.PrayerState.openPanels + (opened ? 1 : -1))

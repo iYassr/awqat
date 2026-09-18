@@ -10,6 +10,7 @@ Item {
     property string error: ""
     property double now: Date.now() / 1000
     property int openPanels: 0
+    property int consumers: 0
     property string config: ""
     property string activeConfig: ""
     property double retryAt: 0
@@ -33,6 +34,25 @@ Item {
     readonly property bool loading: fetcher.running
     readonly property var next: Model.nextPrayer(report, now)
 
+    function attach() { consumers++ }
+    function detach() {
+        consumers = Math.max(0, consumers - 1)
+        if (consumers > 0) return
+        // QML singletons survive their widgets. Last-view teardown must stop work.
+        config = ""
+        refreshDebounce.stop()
+        queuedForce = false
+        stopAudio()
+        alertProc.running = false
+        fetcher.running = false
+        report = null
+        error = ""
+        audioError = ""
+        failures = 0
+        retryAt = 0
+        openPanels = 0
+        secondsInBar = false
+    }
     function configure(value) {
         if (config === value) return
         config = value
@@ -167,6 +187,7 @@ Item {
         property bool timedOut: false
         stdout: StdioCollector { waitForEnd: true }
         onExited: function(code, status) {
+            if (!root.config) return
             if (root.activeConfig !== root.config || root.queuedForce) {
                 var force = root.queuedForce
                 root.queuedForce = false

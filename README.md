@@ -127,6 +127,8 @@ To hide it temporarily, use `omarchy plugin disable yasserdo.awqat`.
   shared libraries, the Omarchy shell, and optional audio.
 - [Privacy and security](SECURITY.md): network services, local storage, and
   trust boundaries.
+- [Release readiness](RELEASE-READINESS.md): the latest findings, fixes,
+  verification, and testing limits.
 - [36 logo concepts](https://github.com/iYassr/awqat/releases/download/v1.2.2/logo-gallery.html):
   download and open the offline gallery to try palettes, preview bar sizes,
   and save your favorites. Awqat uses **03 · Open sanctuary**: two embracing arches around a central light.

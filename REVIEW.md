@@ -2,6 +2,13 @@
 
 Reviewed on 18 September 2026; updated after migrating the helper to Rust, with a further security/size review in 1.2.1. Security findings and trust boundaries are in [SECURITY.md](SECURITY.md); visual and interaction coverage is in [UX-AUDIT.md](UX-AUDIT.md).
 
+## Public release review in 1.2.3
+
+The [release-readiness review](RELEASE-READINESS.md) records the latest
+findings, fixes, clean-install verification, refreshed dependency check, and
+remaining platform/soak-test limits. It adds 15 isolated QML lifecycle checks
+and reruns the HTTPS integration fixture.
+
 ## Follow-up in 1.2.2
 
 See [PLUGIN-COMPARISON.md](PLUGIN-COMPARISON.md) for the source comparisons,

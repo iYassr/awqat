@@ -25,6 +25,8 @@ Ui.Panel {
     readonly property double previewMinute: Math.floor(now / 60) * 60
     readonly property var previewPrayer: root.next || ({name: "Dhuhr", arabic: "الظهر", time24: "11:47", time12: "11:47", period: "AM", epoch: root.previewMinute + 3600})
     readonly property string customFormatError: barPreset.value === "custom" ? Model.formatError(customFormat.text) : ""
+    readonly property bool settingsValid: (mode.value === "auto" || city.text.trim().length > 0)
+        && customFormatError === "" && (soundChoice.value !== "custom" || audioFile.text.trim().length > 0)
     onSettingsPageChanged: scroll.contentY = 0
     onOpenedChanged: if (!opened) editing = false
 
@@ -36,6 +38,7 @@ Ui.Panel {
         return {sound: soundChoice.value, volume: Math.round(volume.value), audioFile: audioFile.text.trim()}
     }
     function saveSettings() {
+        if (!hostWidget || !settingsValid) return
         hostWidget.save({locationMode: mode.value, city: city.text.trim(), method: method.value, school: school.value,
             barPreset: barPreset.value, barFormat: customFormat.text, showIcon: iconToggle.checked,
             clock24: timeFormat.value === "24", notifications: notificationToggle.checked,
@@ -451,7 +454,7 @@ Ui.Panel {
                         Ui.Button {
                             width: parent.width; text: "Save settings"; foreground: root.accent; selected: true
                             fontFamily: root.sans; verticalPadding: Style.space(12); focusable: true
-                            enabled: (mode.value === "auto" || city.text.trim().length > 0) && root.customFormatError === "" && (soundChoice.value !== "custom" || audioFile.text.trim().length > 0)
+                            enabled: root.settingsValid
                             onClicked: root.saveSettings()
                         }
                     }
