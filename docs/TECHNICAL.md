@@ -6,10 +6,15 @@ Build details, configuration reference, performance measurements, and developmen
 
 Requires Omarchy’s Quickshell plugin system, system libcurl with HTTPS support, and the system timezone database. Desktop notifications use `notify-send`; optional audio uses `mpv`. The runtime helper is Rust; Python is not required. Node is only needed for JavaScript development tests.
 
-Build tools: Rust/Cargo 1.89+, a C compiler, and pkg-config. On Omarchy:
+Build tools: Rust/Cargo 1.89+, a C compiler, and pkg-config. Prepare the
+`rust` and `base-devel` packages separately using your normal system package
+tools, and ensure system libcurl development files are available. Awqat
+does not install or upgrade system packages. Missing tools stop the build
+with an error. Cargo may download the dependencies pinned in `Cargo.lock`.
+
+With those prerequisites available:
 
 ```sh
-omarchy pkg add rust base-devel
 omarchy plugin add https://github.com/iYassr/awqat
 cd ~/.config/omarchy/plugins/yasserdo.awqat
 ./build.sh

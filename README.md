@@ -12,8 +12,13 @@ done. The panel loads when you open it and unloads when you close it.
 
 ## Install
 
+First prepare the build dependencies using your normal system package tools:
+Rust/Cargo 1.89+ (`rust` on Omarchy), a C toolchain and pkg-config
+(`base-devel`), and system libcurl development files. Awqat checks for these
+tools and stops if they are missing; it does not install or upgrade system
+packages. Building may download the Rust dependencies pinned in `Cargo.lock`.
+
 ```sh
-omarchy pkg add rust base-devel
 omarchy plugin add https://github.com/iYassr/awqat
 cd ~/.config/omarchy/plugins/yasserdo.awqat
 ./build.sh

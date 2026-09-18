@@ -2,7 +2,11 @@
 set -euo pipefail
 plugin_dir=$(cd -- "$(dirname -- "$0")" && pwd)
 for tool in cargo cc pkg-config; do
-  command -v "$tool" >/dev/null || { echo "Missing $tool. Install build tools with: omarchy pkg add rust base-devel" >&2; exit 1; }
+  command -v "$tool" >/dev/null || {
+    echo "Missing build dependency: $tool. See README.md for prerequisites." >&2
+    echo 'Awqat does not install system packages. Prepare the dependencies separately, then rerun ./build.sh.' >&2
+    exit 1
+  }
 done
 pkg-config --exists libcurl || { echo 'System libcurl development files are required.' >&2; exit 1; }
 source_checksums=$(cd "$plugin_dir" && sha256sum Cargo.toml Cargo.lock src/*.rs)
