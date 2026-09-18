@@ -107,9 +107,6 @@ fn run() -> Result<Value> {
             Ok(report)
         }
         "alerts" => {
-            if !["none", "custom"].contains(&settings.sound.as_str()) {
-                storage::private_dir(&cache.root)?;
-            }
             if test_notification {
                 alerts::test_notification()?;
                 return Ok(json!({"ok":true,"file":""}));
@@ -118,14 +115,12 @@ fn run() -> Result<Value> {
                 alerts::deliver(
                     &settings,
                     &event,
-                    &cache.root.join("audio"),
+                    &cache.root,
                     &user_dir("XDG_STATE_HOME", ".local/state")?,
                     &network,
                 )
             } else {
-                Ok(
-                    json!({"ok":true,"file":alerts::prepare_sound(&settings, &cache.root.join("audio"), &network)?}),
-                )
+                Ok(json!({"ok":true,"file":alerts::prepare(&settings, &cache.root, &network)?}))
             }
         }
         _ => Err("Expected times or alerts subcommand".into()),

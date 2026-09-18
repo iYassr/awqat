@@ -644,3 +644,109 @@ fn fifo_cache_and_audio_do_not_block() {
     alerts::prepare_sound(&settings, temp.path(), &Fake::default()).unwrap();
     assert!(fs::metadata(&path).unwrap().is_file());
 }
+
+#[test]
+fn invalid_location_mode_rejected_before_network() {
+    let (_temp, cache) = setup();
+    let net = Fake::default();
+    let settings = Settings {
+        location_mode: "typo".into(),
+        ..Settings::default()
+    };
+    assert!(times::report(&settings, &cache, &net, false, 0.0).is_err());
+    assert_eq!(net.calls.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn next_day_schedule_cannot_masquerade_as_today() {
+    let (_temp, cache) = setup();
+    report(&cache, &Fake::default());
+    let mut data = fixture("2026-09-19");
+    data["date"]["gregorian"]["date"] = json!("18-09-2026");
+    let net = Fake {
+        corrupt: Some(json!({"code":200,"data":data})),
+        ..Fake::default()
+    };
+    let out = times::report(
+        &Settings::default(),
+        &cache,
+        &net,
+        true,
+        instant("2026-09-18T10:00:00Z"),
+    )
+    .unwrap();
+    assert_eq!(out["offline"], true);
+    assert_eq!(
+        out["rows"][0]["epoch"],
+        instant("2026-09-18T04:22:00+03:00") as i64
+    );
+}
+
+#[test]
+fn day_boundaries_follow_daylight_saving_time() {
+    for (date, offset, start, end, hours) in [
+        (
+            "2026-03-08",
+            "-04:00",
+            "2026-03-08T00:00:00-05:00",
+            "2026-03-09T00:00:00-04:00",
+            23,
+        ),
+        (
+            "2026-11-01",
+            "-05:00",
+            "2026-11-01T00:00:00-04:00",
+            "2026-11-02T00:00:00-05:00",
+            25,
+        ),
+    ] {
+        let (_temp, cache) = setup();
+        let now = instant(start);
+        cache
+            .write(
+                "location:auto",
+                &json!({"name":"New York","country":"United States",
+            "countryCode":"US","latitude":40.7,"longitude":-74.0,
+            "timezone":"America/New_York","automatic":true}),
+                now,
+            )
+            .unwrap();
+        let mut data = fixture(date);
+        for name in times::PRAYERS {
+            data["timings"][name] = json!(
+                data["timings"][name]
+                    .as_str()
+                    .unwrap()
+                    .replace("+03:00", offset)
+            );
+        }
+        let net = Fake {
+            corrupt: Some(json!({"code":200,"data":data})),
+            ..Fake::default()
+        };
+        let out = times::report(&Settings::default(), &cache, &net, false, now).unwrap();
+        assert_eq!(out["dayEnds"], instant(end) as i64);
+        assert_eq!(out["dayEnds"].as_i64().unwrap() - now as i64, hours * 3600);
+        assert_eq!(out["rows"][0]["time24"], "04:22");
+    }
+}
+
+#[test]
+fn audio_root_symlink_is_rejected_but_disabled_audio_needs_no_cache() {
+    use std::os::unix::fs::symlink;
+    let temp = tempfile::tempdir().unwrap();
+    let target = temp.path().join("target");
+    fs::create_dir(&target).unwrap();
+    let root = temp.path().join("cache");
+    symlink(&target, &root).unwrap();
+    let settings = Settings {
+        sound: "chime".into(),
+        ..Settings::default()
+    };
+    assert!(alerts::prepare(&settings, &root, &Fake::default()).is_err());
+    assert!(!target.join("audio").exists());
+    assert_eq!(
+        alerts::prepare(&Settings::default(), &root, &Fake::default()).unwrap(),
+        ""
+    );
+}

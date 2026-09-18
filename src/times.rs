@@ -123,8 +123,8 @@ fn parse_day(data: &Value, day: Date, zone: &TimeZone) -> Result<Day> {
             .map_err(|_| "Prayer times are invalid or missing their timezone")?;
         let local = instant.to_zoned(zone.clone());
         let epoch = instant.as_second();
-        if local.date() < day
-            || local.date() > day.checked_add(1.days())?
+        if (local.date() != day
+            && !(*name == "Isha" && local.date() == day.checked_add(1.days())?))
             || previous.is_some_and(|p| epoch <= p)
         {
             return Err("Prayer times have invalid dates or ordering".into());
@@ -198,7 +198,10 @@ pub fn report(
     if !["0", "1"].contains(&settings.school.as_str()) {
         return Err("Invalid Asr calculation setting".into());
     }
-    let automatic = settings.location_mode != "manual";
+    if !["auto", "manual"].contains(&settings.location_mode.as_str()) {
+        return Err("Invalid location mode".into());
+    }
+    let automatic = settings.location_mode == "auto";
     let query: String = settings.city.trim().chars().take(150).collect();
     let key = if automatic {
         "location:auto".into()
@@ -231,19 +234,33 @@ pub fn report(
     let zone = TimeZone::get(&loc.timezone)?;
     let local = Timestamp::from_second(now as i64)?.to_zoned(zone.clone());
     let today = local.date();
-    let load_day = |day: Date| -> Result<(Value, bool)> {
+    let load_day = |day: Date| -> Result<(Day, bool)> {
         let key = day_key(day, &loc, method, &settings.school);
-        let zone = TimeZone::get(&loc.timezone)?;
-        cache.cached(&key, 7.0*86400.0, force, now, || {
-        let mut url = format!("https://api.aladhan.com/v1/timings/{}?latitude={}&longitude={}&timezonestring={}&iso8601=true&school={}", day.strftime("%d-%m-%Y"), loc.latitude, loc.longitude, encode(&loc.timezone), settings.school);
-        if method != "auto" { url.push_str(&format!("&method={method}")); }
-        let raw = network.json(&url)?;
-        if raw["code"] != 200 || !raw["data"].is_object() { return Err("Prayer times service is unavailable. Please retry.".into()); }
-        Ok(raw["data"].clone())
-    }, |data| { parse_day(data,day,&zone)?; Ok(()) })
+        let (data, stale) = cache.cached(
+            &key,
+            7.0 * 86400.0,
+            force,
+            now,
+            || {
+                let mut url = format!(
+                    "https://api.aladhan.com/v1/timings/{}?latitude={}&longitude={}&timezonestring={}&iso8601=true&school={}",
+                    day.strftime("%d-%m-%Y"), loc.latitude, loc.longitude,
+                    encode(&loc.timezone), settings.school
+                );
+                if method != "auto" {
+                    url.push_str(&format!("&method={method}"));
+                }
+                let raw = network.json(&url)?;
+                if raw["code"] != 200 || !raw["data"].is_object() {
+                    return Err("Prayer times service is unavailable. Please retry.".into());
+                }
+                Ok(raw["data"].clone())
+            },
+            |data| parse_day(data, day, &zone).map(|_| ()),
+        )?;
+        Ok((parse_day(&data, day, &zone)?, stale))
     };
     let (current, mut stale) = load_day(today)?;
-    let current = parse_day(&current, today, &zone)?;
     let mut events = current.rows.clone();
     let yesterday = today.checked_sub(1.days())?;
     let tomorrow = today.checked_add(1.days())?;
@@ -256,17 +273,10 @@ pub fn report(
                 .join()
                 .unwrap_or_else(|_| Err("Schedule worker stopped unexpectedly".into()))
             {
-                Ok((data, was_stale)) => match parse_day(&data, date, &zone) {
-                    Ok(day) => {
-                        events.extend(day.rows);
-                        stale |= was_stale;
-                    }
-                    Err(_) => {
-                        if date > today {
-                            missing_future = true;
-                        }
-                    }
-                },
+                Ok((day, was_stale)) => {
+                    events.extend(day.rows);
+                    stale |= was_stale;
+                }
                 Err(_) => {
                     if date > today {
                         missing_future = true;

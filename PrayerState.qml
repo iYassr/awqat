@@ -26,6 +26,8 @@ Item {
     property var queuedEvent: null
     property string pendingAudioFile: ""
     property bool intentionalStop: false
+    property int audioGeneration: 0
+    property bool warmupPending: false
     readonly property bool audioBusy: alertProc.running
     readonly property bool playing: player.running
     readonly property bool loading: fetcher.running
@@ -51,10 +53,16 @@ Item {
         if (changed) {
             audioError = ""
             stopAudio()
-            if (nextSettings.sound !== "none") prepareAudio(nextSettings, false, null)
+            if (nextSettings.sound !== "none") {
+                if (alertProc.running) warmupPending = true
+                else prepareAudio(nextSettings, false, null)
+            }
         }
     }
     function stopAudio() {
+        audioGeneration++
+        warmupPending = false
+        queuedEvent = null
         playPrepared = false
         pendingAudioFile = ""
         intentionalStop = player.running
@@ -75,6 +83,8 @@ Item {
         audioError = ""
         playPrepared = false
         alertProc.command = [decodeURIComponent(Qt.resolvedUrl("awqat-helper").toString().replace(/^file:\/\//, "")), "alerts", "--test-notification"]
+        alertProc.generation = audioGeneration
+        alertProc.timedOut = false
         alertProc.running = true
     }
     function prepareAudio(settings, preview, event) {
@@ -90,6 +100,8 @@ Item {
         var args = [decodeURIComponent(Qt.resolvedUrl("awqat-helper").toString().replace(/^file:\/\//, "")), "alerts", "--settings", JSON.stringify(settings)]
         if (event) args.push("--event", JSON.stringify(Object.assign({}, event, {city: report ? report.location.name : ""})))
         alertProc.command = args
+        alertProc.generation = audioGeneration
+        alertProc.timedOut = false
         alertProc.running = true
     }
     function checkAlerts() {
@@ -108,6 +120,7 @@ Item {
         var args = [decodeURIComponent(Qt.resolvedUrl("awqat-helper").toString().replace(/^file:\/\//, "")), "times", "--settings", config]
         if (force === true) args.push("--force")
         fetcher.command = args
+        fetcher.timedOut = false
         fetcher.running = true
     }
     function failed(message) {
@@ -120,6 +133,7 @@ Item {
         interval: 110000
         running: fetcher.running
         onTriggered: {
+            fetcher.timedOut = true
             fetcher.running = false
             root.failed("Location update timed out. Retrying automatically.")
         }
@@ -128,6 +142,7 @@ Item {
         interval: 40000
         running: alertProc.running
         onTriggered: {
+            alertProc.timedOut = true
             root.playPrepared = false
             alertProc.running = false
             root.audioError = "Alert preparation timed out. Please retry."
@@ -149,61 +164,78 @@ Item {
     }
     Process {
         id: fetcher
-        stdout: StdioCollector {
-            waitForEnd: true
-            onStreamFinished: {
-                if (root.activeConfig !== root.config) return
-                try {
-                    var result = JSON.parse(text)
-                    if (result.ok) {
-                        root.report = result
-                        root.error = ""
-                        if (result.offline || result.missingTomorrow) {
-                            root.failures = Math.min(root.failures + 1, 5)
-                            root.retryAt = Date.now() / 1000 + Model.retryDelay(root.failures)
-                        } else {
-                            root.failures = 0
-                            root.retryAt = result.refreshAt || Math.min(result.dayEnds, Date.now() / 1000 + 1800)
-                        }
-                    } else root.failed(result.error || "Could not load prayer times.")
-                } catch (e) { root.failed("Could not load prayer times. Please retry.") }
-                root.touch()
-                root.checkAlerts()
-            }
-        }
+        property bool timedOut: false
+        stdout: StdioCollector { waitForEnd: true }
         onExited: function(code, status) {
             if (root.activeConfig !== root.config || root.queuedForce) {
                 var force = root.queuedForce
                 root.queuedForce = false
                 Qt.callLater(function() { root.refresh(force) })
-            } else if (code !== 0) root.failed("Prayer times helper stopped unexpectedly. Retrying automatically.")
+                return
+            }
+            // Finish each request once; a timeout keeps its specific error.
+            if (timedOut) return
+            if (code !== 0) {
+                root.failed("Prayer times helper stopped unexpectedly. Retrying automatically.")
+                return
+            }
+            try {
+                var result = JSON.parse(stdout.text)
+                if (result.ok) {
+                    root.report = result
+                    root.error = ""
+                    if (result.offline || result.missingTomorrow) {
+                        root.failures = Math.min(root.failures + 1, 5)
+                        root.retryAt = Date.now() / 1000 + Model.retryDelay(root.failures)
+                    } else {
+                        root.failures = 0
+                        root.retryAt = result.refreshAt || Math.min(result.dayEnds, Date.now() / 1000 + 1800)
+                    }
+                } else root.failed(result.error || "Could not load prayer times.")
+            } catch (e) { root.failed("Could not load prayer times. Please retry.") }
+            root.touch()
+            root.checkAlerts()
         }
     }
     Process {
         id: alertProc
-        stdout: StdioCollector {
-            waitForEnd: true
-            onStreamFinished: {
-                try {
-                    var result = JSON.parse(text)
-                    if (!result.ok) root.audioError = result.error || "Could not prepare audio."
-                    else {
-                        root.audioError = result.warning || ""
-                        if (root.playPrepared && result.file) {
-                            root.pendingAudioFile = result.file
-                            if (player.running) { root.intentionalStop = true; player.running = false }
-                            else root.launchPendingAudio()
-                        }
-                    }
-                } catch (e) { root.audioError = "Could not prepare the prayer alert." }
-            }
-        }
+        property bool timedOut: false
+        property int generation: 0
+        stdout: StdioCollector { waitForEnd: true }
         onExited: function(code, status) {
-            if (code !== 0) root.audioError = "Could not start the alert helper."
+            // Stop or a settings change invalidates a still-finishing request.
+            if (!timedOut && generation === root.audioGeneration) {
+                if (code !== 0) root.audioError = "Could not start the alert helper."
+                else {
+                    try {
+                        var result = JSON.parse(stdout.text)
+                        if (!result.ok) root.audioError = result.error || "Could not prepare audio."
+                        else {
+                            root.audioError = result.warning || ""
+                            if (root.playPrepared && result.file) {
+                                root.pendingAudioFile = result.file
+                                if (player.running) { root.intentionalStop = true; player.running = false }
+                                else root.launchPendingAudio()
+                            }
+                        }
+                    } catch (e) { root.audioError = "Could not prepare the prayer alert." }
+                }
+            }
             if (root.queuedEvent) {
                 var event = root.queuedEvent
+                var generationAtExit = root.audioGeneration
                 root.queuedEvent = null
-                Qt.callLater(function() { root.prepareAudio(root.alertSettings, false, event) })
+                Qt.callLater(function() {
+                    if (generationAtExit === root.audioGeneration)
+                        root.prepareAudio(root.alertSettings, false, event)
+                })
+            } else if (root.warmupPending) {
+                root.warmupPending = false
+                var warmupGeneration = root.audioGeneration
+                Qt.callLater(function() {
+                    if (warmupGeneration === root.audioGeneration)
+                        root.prepareAudio(root.alertSettings, false, null)
+                })
             }
         }
     }

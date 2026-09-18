@@ -141,8 +141,10 @@ impl Cache {
                 let _ = self.write(key, &data, now);
                 Ok((data, false))
             }
-            Err(_) if old.is_some() => Ok((old.unwrap().0, true)),
-            Err(e) => Err(e),
+            Err(error) => match old {
+                Some((data, _)) => Ok((data, true)),
+                None => Err(error),
+            },
         }
     }
     pub fn prune(&self, now: f64) {

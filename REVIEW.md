@@ -2,6 +2,18 @@
 
 Reviewed on 18 September 2026; updated after migrating the helper to Rust, with a further security/size review in 1.2.1. Security findings and trust boundaries are in [SECURITY.md](SECURITY.md); visual and interaction coverage is in [UX-AUDIT.md](UX-AUDIT.md).
 
+## Follow-up in 1.2.2
+
+See [PLUGIN-COMPARISON.md](PLUGIN-COMPARISON.md) for the source comparisons,
+changes, and accuracy limits. This pass fixed notification/audio-cache
+coupling, tightened dated schedules and location modes, simplified schedule
+loading, and consolidated QML helper completion and cancellation handling.
+41 Rust tests, 39 JavaScript assertions, and three isolated CLI regression
+tests passed. The existing HTTPS integration test was not rerun because the
+transport and dependencies were unchanged. Strict Clippy, formatting, QML
+parsing, manifest validation, and Git whitespace checks passed. Live shell
+schedule loading and muted adhan playback/Stop were exercised.
+
 ## Reliability
 
 - Validated remote/cached location fields and dated prayer timestamps. Prayer events must be ordered; Isha after midnight is supported. Invalid cached timezones, excessive nesting, and future-dated cache timestamps are discarded.

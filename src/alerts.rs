@@ -103,6 +103,15 @@ fn valid_audio_header(bytes: &[u8], mp3: bool) -> bool {
         bytes.starts_with(b"RIFF") && bytes.get(8..12) == Some(b"WAVE")
     }
 }
+// Validate the application cache root only when audio actually needs it.
+// Text notification delivery must not depend on a writable audio cache.
+pub fn prepare(settings: &Settings, root: &Path, network: &impl Network) -> Result<String> {
+    if !["none", "custom"].contains(&settings.sound.as_str()) {
+        storage::private_dir(root)?;
+    }
+    prepare_sound(settings, &root.join("audio"), network)
+}
+
 pub fn prepare_sound(settings: &Settings, cache: &Path, network: &impl Network) -> Result<String> {
     let sound = settings.sound.as_str();
     if sound == "none" {
@@ -238,7 +247,7 @@ pub fn deliver(
             warning = "The desktop notification could not be delivered.".into();
         }
     }
-    let file = prepare_sound(settings, cache, network)?;
+    let file = prepare(settings, cache, network)?;
     Ok(
         json!({"ok":true,"file":if crate::now()-event.epoch>90.0 {String::new()} else {file},"warning":warning}),
     )

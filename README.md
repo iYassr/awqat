@@ -130,11 +130,14 @@ cargo test --locked --target-dir /tmp/awqat-test-build
 cargo clippy --locked --target-dir /tmp/awqat-test-build --all-targets -- -D warnings
 cargo fmt --check
 node tests/model.test.cjs
+python3 tests/reliability_cli.py  # Optional CLI regressions; build the helper first
 omarchy plugin validate .
 ```
 
-The standard suite includes 37 Rust tests and 39 JavaScript checks covering cache isolation/limits/corruption, offline fallback, timezone/year rollover, partial API failure, formatting, retry backoff, duplicate suppression, late-wake behavior, disabled alerts, private storage, atomic-write cleanup, and tone generation. An additional HTTPS integration test covers certificates, hostnames, redirects, timeouts, and response-size limits. Run `python3 tests/security_transport.py` with Python 3 and OpenSSL installed; these are optional test tools, not runtime requirements. The QML panel also needs a running Omarchy shell for visual verification. See [UX-AUDIT.md](UX-AUDIT.md) for usability coverage, [SECURITY.md](SECURITY.md) for security boundaries and privacy, and [REVIEW.md](REVIEW.md) for reliability, performance, and code review findings.
+The standard suite includes 41 Rust tests and 39 JavaScript checks covering cache isolation/limits/corruption, offline fallback, timezone/year rollover, partial API failure, formatting, retry backoff, duplicate suppression, late-wake behavior, disabled alerts, private storage, atomic-write cleanup, and tone generation. An additional HTTPS integration test covers certificates, hostnames, redirects, timeouts, and response-size limits. Run `python3 tests/security_transport.py` with Python 3 and OpenSSL installed; these are optional test tools, not runtime requirements. The QML panel also needs a running Omarchy shell for visual verification. See [UX-AUDIT.md](UX-AUDIT.md) for usability coverage, [SECURITY.md](SECURITY.md) for security boundaries and privacy, and [REVIEW.md](REVIEW.md) for reliability, performance, and code review findings.
 
 ## License
 
 Plugin code and vector artwork are available under the [MIT license](LICENSE). Downloaded adhan recordings are external assets; see the audio attribution above.
+
+The [plugin comparison](PLUGIN-COMPARISON.md) records lessons from popular community plugins and the reliability changes applied in 1.2.2. Python is optional for the CLI and HTTPS test harnesses only.
