@@ -5,7 +5,7 @@
   "version": "1.2.2",
   "author": "Yasser",
   "license": "MIT",
-  "description": "A simple, lightweight Rust-powered prayer-times plugin with automatic location, countdowns, custom bar formats, notifications, and adhan.",
+  "description": "Prayer times, quietly in your bar. A simple, lightweight Rust plugin with automatic location, countdowns, notifications, and adhan.",
   "kinds": [
     "bar-widget"
   ],
