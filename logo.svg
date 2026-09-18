@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <title>Awqat — dawn in a prayer arch</title>
-  <path d="M5 20v-8c0-4 4-6 7-9 3 3 7 5 7 9v8H5Z" stroke="#f38d70" stroke-width="1.8" stroke-linejoin="round"/>
-  <path d="M9 16a3 3 0 0 1 6 0M8 16h8" stroke="#f38d70" stroke-width="1.8" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#f38d70" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+  <title>Awqat — Open sanctuary</title>
+  <path d="M11 52V32c0-12 10-18 17-24M53 52V32c0-12-10-18-17-24M21 51V34c0-7 5-12 11-17 6 5 11 10 11 17v17"/>
+  <circle cx="32" cy="42" r="3" fill="#f38d70" stroke="none"/>
 </svg>

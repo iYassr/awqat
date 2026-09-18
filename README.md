@@ -51,12 +51,12 @@ at runtime. Notifications use `notify-send`; optional audio uses `mpv`.
 
 ## Your day, one click away
 
-<img src="preview.png" alt="Awqat on Omarchy showing Riyadh prayer times, Arabic labels, a Dhuhr countdown, and the Hijri date" width="348">
+<img src="preview.png" alt="Awqat on Omarchy showing Riyadh prayer times, Arabic labels, an Asr countdown, and the Hijri date" width="348">
 
 A real Awqat panel on Omarchy. The next prayer stands out; the rest of the
 day stays easy to scan.
 
-Click the prayer-arch icon in your bar to open it. The gear takes you to
+Click the Open sanctuary icon in your bar to open it. The gear takes you to
 **Location**, **Bar**, and **Alerts**. Switch between **12H / 24H** in the
 panel, or middle-click the bar widget to refresh.
 
@@ -129,8 +129,7 @@ To hide it temporarily, use `omarchy plugin disable yasserdo.awqat`.
   trust boundaries.
 - [36 logo concepts](https://github.com/iYassr/awqat/releases/download/v1.2.2/logo-gallery.html):
   download and open the offline gallery to try palettes, preview bar sizes,
-  and save your favorites. These are design studies; Awqat still uses its
-  current prayer-arch logo.
+  and save your favorites. Awqat uses **03 · Open sanctuary**: two embracing arches around a central light.
 
 Code and vector artwork use the [MIT license](LICENSE). Adhan recordings
 come from [AlAdhan](https://aladhan.com/download-adhans), are not bundled,
