@@ -8,21 +8,38 @@ Click the Awqat prayer-arch icon and next prayer in the bar to open. The gear op
 
 ## Install
 
-Requires Omarchy’s Quickshell plugin system, Python 3, curl 8.4 or newer, and timezone data. Desktop notifications use `notify-send`; optional audio uses `mpv`. Node is only needed for the JavaScript tests. No Python packages or background daemon are installed.
+Requires Omarchy’s Quickshell plugin system, system libcurl with HTTPS support, and the system timezone database. Desktop notifications use `notify-send`; optional audio uses `mpv`. The runtime helper is Rust; Python is not required. Node is only needed for JavaScript development tests.
 
-Install from GitHub:
+Build tools: Rust/Cargo 1.89+, a C compiler, and pkg-config. On Omarchy:
 
 ```sh
-omarchy plugin add https://github.com/iYassr/awqat --enable
+omarchy pkg add rust base-devel
+omarchy plugin add https://github.com/iYassr/awqat
+cd ~/.config/omarchy/plugins/yasserdo.awqat
+./build.sh
+omarchy plugin enable yasserdo.awqat
 ```
 
-For a local checkout, copy this folder to `~/.config/omarchy/plugins/yasserdo.awqat/`, then run:
+If the installer offers to enable the plugin, finish the build before using it. `build.sh` downloads the dependencies pinned in `Cargo.lock`, creates an optimized native `bin/awqat-core`, and removes its temporary build output. The compiler and Cargo registry cache are development tools; they are not part of the runtime helper. No background daemon or automatic build/download hook is installed.
+
+For a local checkout, copy this folder to `~/.config/omarchy/plugins/yasserdo.awqat/`, run `./build.sh` there, then run:
 
 ```sh
 omarchy plugin validate ~/.config/omarchy/plugins/yasserdo.awqat
 omarchy-shell shell rescanPlugins
 omarchy plugin enable yasserdo.awqat
 ```
+
+After updating, rebuild the helper:
+
+```sh
+omarchy plugin update yasserdo.awqat
+cd ~/.config/omarchy/plugins/yasserdo.awqat
+./build.sh
+omarchy-shell yasserdo.awqat refresh
+```
+
+Settings, downloaded audio, and the delivery ledger carry over from the Python version. Compatible existing schedule caches are reused. Native binaries are built for the current machine; do not copy an ARM64 binary onto an x86-64 system.
 
 The folder must contain `manifest.json` directly. Enabling adds the widget to the bar; the default section is **right**. Existing widgets and settings are preserved. This plugin targets the native Quickshell shell, rather than older Waybar configurations.
 
@@ -89,7 +106,7 @@ Alerts apply to the five prayers, not sunrise. They require a running Omarchy sh
 - JSON cache is bounded to 96 files, 2 MiB, and 35 days. Audio is separate: two optional adhan tracks, each capped at 8 MiB, plus two tones under 80 KiB each. The delivery ledger retains at most 32 recent events.
 - Cache writes are atomic. Corrupt cached data is validated and refetched; cache write failures do not discard valid network responses. Concurrent helper invocations share a lock.
 
-On this machine, a cached helper invocation measured **0.053 seconds median across five runs** and **25.2 MiB peak RSS**, released on exit. This is the helper measurement, not a measurement of the whole Omarchy shell.
+A local ARM64 comparison across 15 warm runs measured **8 ms median / 10.7 MiB peak RSS** for the Rust helper through its launcher, versus **59 ms / 25.2 MiB** for the previous Python helper. The optimized binary is approximately **760 KiB**, dynamically linked to the system libcurl. This measures temporary helper usage, not the whole Omarchy shell, compiler, network transfer, or audio playback. See [REVIEW.md](REVIEW.md) for methodology and limits.
 
 ## Commands
 
@@ -109,12 +126,14 @@ omarchy plugin disable yasserdo.awqat
 ## Verification
 
 ```sh
-python3 -B -m unittest discover -s tests
+cargo test --locked --target-dir /tmp/awqat-test-build
+cargo clippy --locked --target-dir /tmp/awqat-test-build --all-targets -- -D warnings
+cargo fmt --check
 node tests/model.test.cjs
 omarchy plugin validate .
 ```
 
-The suite includes 32 Python tests and 39 JavaScript checks covering cache isolation/limits/corruption, offline fallback, timezone/year rollover, partial API failure, formatting, retry backoff, duplicate suppression, late-wake behavior, notification/audio independence, and tone generation. The QML panel also needs a running Omarchy shell for visual verification. See [UX-AUDIT.md](UX-AUDIT.md) for usability coverage, [SECURITY.md](SECURITY.md) for security boundaries and privacy, and [REVIEW.md](REVIEW.md) for reliability, performance, and code review findings.
+The suite includes 34 Rust tests and 39 JavaScript checks covering cache isolation/limits/corruption, offline fallback, timezone/year rollover, partial API failure, formatting, retry backoff, duplicate suppression, late-wake behavior, disabled alerts, private storage, atomic-write cleanup, and tone generation. The QML panel also needs a running Omarchy shell for visual verification. See [UX-AUDIT.md](UX-AUDIT.md) for usability coverage, [SECURITY.md](SECURITY.md) for security boundaries and privacy, and [REVIEW.md](REVIEW.md) for reliability, performance, and code review findings.
 
 ## License
 

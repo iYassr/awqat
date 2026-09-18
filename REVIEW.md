@@ -1,6 +1,6 @@
 # Reliability, performance, and code review
 
-Reviewed on 18 September 2026 before initial GitHub publication. Security findings and trust boundaries are in [SECURITY.md](SECURITY.md); visual and interaction coverage is in [UX-AUDIT.md](UX-AUDIT.md).
+Reviewed on 18 September 2026; updated after migrating the helper to Rust 1.2.0. Security findings and trust boundaries are in [SECURITY.md](SECURITY.md); visual and interaction coverage is in [UX-AUDIT.md](UX-AUDIT.md).
 
 ## Reliability
 
@@ -13,29 +13,32 @@ Reviewed on 18 September 2026 before initial GitHub publication. Security findin
 
 ## Speed and footprint
 
-Five fresh-process cached lookups on the development machine measured:
+A comparison on the development machine (Linux ARM64) used a small C parent process with `clock_gettime`, `fork/exec`, and `wait4` to measure 15 fresh helper processes for each implementation against the same warm cache:
 
-| Measurement | Result |
-| --- | --- |
-| Median elapsed time | 52.7 ms |
-| Range | 47.1–55.3 ms |
-| Peak child memory | 25.2 MiB RSS |
+| Measurement | Rust (including launcher) | Previous Python |
+| --- | --- | --- |
+| Median elapsed time | 7.96 ms | 59.04 ms |
+| Maximum child RSS | 10.70 MiB | 25.17 MiB |
 
-These measurements cover the short-lived Python helper, not total Quickshell memory or cold network latency. A warm-cache test confirms no API calls occur. A forced live update succeeded through the stricter transfer rules.
+The Rust release binary is approximately 760 KiB. Release settings use size optimization, LTO, one codegen unit, symbol stripping, and abort-on-panic. `ldd` verified dynamic linking to the installed libcurl; Jiff reads the system timezone database without embedding a database. No Rust async runtime or persistent helper is used. Network requests use libcurl directly, avoiding a curl subprocess.
 
-The existing architecture already avoids frequent process startup: one singleton serves all monitors, network helpers exit after work, closed-panel checks run at minute/prayer boundaries, and the panel unloads when closed. Seconds are used only for an open countdown or the explicit seconds-in-bar format. Live status after reload confirmed one initial request, no active playback, no panel instance, and no plugin error. No compiled rewrite or new daemon was needed.
+These measurements cover the helper and its shell launcher, not total Quickshell memory, cold network latency, or mpv playback. They exclude the compiler and Cargo cache. RSS includes touched shared libraries. A Python-parent benchmark initially overstated native memory; the C-parent measurement avoids that inherited peak. The results are local samples, not a general performance guarantee.
 
-## Code quality
+The existing architecture avoids frequent process startup: one singleton serves all monitors, the helper exits after work, closed-panel checks run at minute/prayer boundaries, and the panel unloads when closed. Seconds are used only for an open countdown or the explicit seconds-in-bar format.
 
-Responsibilities remain separated: `Model.js` contains pure selection/formatting logic; `PrayerState.qml` owns process and timer lifecycle; QML components render the interface; `prayer_times.py` handles schedule I/O; `alerts.py` owns short-lived alert preparation. Runtime Python dependencies remain standard-library only. Added small validation helpers and regression cases at the boundaries instead of introducing a framework.
+## Code quality and migration
 
-Configuration and third-party data stay out of shell command strings. Tests use temporary directories and mocked network/notification calls; they do not send desktop notifications or alter the real cache. Documentation now states runtime requirements, privacy, provider dependencies, and delivery limitations.
+Responsibilities remain separated: `Model.js` contains pure selection/formatting logic; `PrayerState.qml` owns process and timer lifecycle; QML components render the interface. Rust modules separate typed settings/CLI, bounded HTTPS transport, cache/locking, schedule validation, and alerts. Both former Python helpers have been removed.
+
+The JSON protocol consumed by QML is preserved. Schedule output was compared directly against the previous Python implementation using the installed cache; all fields except request timestamps matched. Existing settings, audio, and event-ledger paths remain compatible. The schedule key format retains legacy spacing to reuse existing cache entries where possible.
+
+The Rust suite ports the earlier behavioral checks and adds actual concurrent claims, corrupt-audio recovery, invalid-ledger-entry handling, and failed atomic-write cleanup. Tests use temporary directories and fake network responses. No application-owned unsafe blocks were added. Dependency versions are pinned; builds are explicit, with artifacts outside the live plugin tree and atomic binary installation.
 
 ## Verification
 
-- 32 Python tests and 39 JavaScript assertions passed.
-- All QML files parsed; Omarchy manifest validation and Git whitespace checks passed.
-- The revised shell loaded without Awqat runtime errors; the idle panel remained unloaded.
+- 34 Rust tests and 39 JavaScript assertions passed.
+- `cargo fmt --check` and strict Clippy passed. All QML files parsed; Omarchy manifest validation and Git whitespace checks passed.
+- Live shell integration passed with the Rust binary: six timetable rows, a loaded panel, muted adhan playback, working Stop, and no Awqat runtime errors.
 - Real cached adhan decoding succeeded with restricted player options. A local playlist disguised as MP3 was rejected.
 - Tracked history was scanned for common GitHub/cloud token and private-key patterns; no matches were found.
 

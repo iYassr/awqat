@@ -74,7 +74,7 @@ Item {
         if (alertProc.running) return
         audioError = ""
         playPrepared = false
-        alertProc.command = ["python3", "-B", decodeURIComponent(Qt.resolvedUrl("alerts.py").toString().replace(/^file:\/\//, "")), "--test-notification"]
+        alertProc.command = [decodeURIComponent(Qt.resolvedUrl("awqat-helper").toString().replace(/^file:\/\//, "")), "alerts", "--test-notification"]
         alertProc.running = true
     }
     function prepareAudio(settings, preview, event) {
@@ -87,7 +87,7 @@ Item {
         audioError = ""
         playbackVolume = Model.audioVolume(settings.volume)
         playPrepared = preview || event !== null
-        var args = ["python3", "-B", decodeURIComponent(Qt.resolvedUrl("alerts.py").toString().replace(/^file:\/\//, "")), "--settings", JSON.stringify(settings)]
+        var args = [decodeURIComponent(Qt.resolvedUrl("awqat-helper").toString().replace(/^file:\/\//, "")), "alerts", "--settings", JSON.stringify(settings)]
         if (event) args.push("--event", JSON.stringify(Object.assign({}, event, {city: report ? report.location.name : ""})))
         alertProc.command = args
         alertProc.running = true
@@ -105,7 +105,7 @@ Item {
         activeConfig = config
         lastAttempt = Date.now() / 1000
         requests++
-        var args = ["python3", "-B", decodeURIComponent(Qt.resolvedUrl("prayer_times.py").toString().replace(/^file:\/\//, "")), "--settings", config]
+        var args = [decodeURIComponent(Qt.resolvedUrl("awqat-helper").toString().replace(/^file:\/\//, "")), "times", "--settings", config]
         if (force === true) args.push("--force")
         fetcher.command = args
         fetcher.running = true

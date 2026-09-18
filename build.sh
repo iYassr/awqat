@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+plugin_dir=$(cd -- "$(dirname -- "$0")" && pwd)
+for tool in cargo cc pkg-config; do
+  command -v "$tool" >/dev/null || { echo "Missing $tool. Install build tools with: omarchy pkg add rust base-devel" >&2; exit 1; }
+done
+pkg-config --exists libcurl || { echo 'System libcurl development files are required.' >&2; exit 1; }
+# Keep build churn outside the live plugin tree and discard temporary artifacts.
+if [[ -n ${CARGO_TARGET_DIR:-} ]]; then
+  build_dir=$CARGO_TARGET_DIR
+else
+  build_dir=$(mktemp -d "${TMPDIR:-/tmp}/awqat-build.XXXXXX")
+  trap 'rm -rf -- "$build_dir"' EXIT
+fi
+cargo build --manifest-path "$plugin_dir/Cargo.toml" --locked --release --target-dir "$build_dir" "$@"
+mkdir -p "$plugin_dir/bin"
+staged=$(mktemp "$plugin_dir/bin/.awqat-core.XXXXXX")
+install -m 755 "$build_dir/release/awqat-core" "$staged"
+mv -f -- "$staged" "$plugin_dir/bin/awqat-core"
+echo "Built Awqat helper: $plugin_dir/bin/awqat-core"

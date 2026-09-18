@@ -16,7 +16,7 @@ Reviewed on the installed Omarchy desktop on 18 September 2026. This records imp
 | Recovery | Offline and stale-location messages, visible Retry action, partial tomorrow failure handling, damaged-cache recovery, and backoff. Audio failures are visible outside settings too. | Automated offline, corruption, full-cache and partial-failure scenarios. |
 | Alert control | Notifications and sound are independent. Test notification, audio preview, volume and stop controls are explicit; full adhan is cached for offline playback. | Notification subprocess tests; real cached adhan decoded and played at zero volume, then stopped. |
 | Alert reliability | Only five prayers qualify. Late wake-ups stay silent, and persisted claims prevent duplicate delivery. Playback remains independent of panel visibility. | Duplicate/future/sunrise/late-event tests and live playback state checks. A real prayer-time boundary was not waited for. |
-| Footprint | One shared updater; lazily created UI; bounded disk cache; no persistent Python or audio process while idle. | Closed-panel status confirmed `panelLoaded: false`, `openPanels: 0`; warm helper timed separately. |
+| Footprint | One shared updater; lazily created UI; bounded disk cache; no persistent helper or audio process while idle. | Closed-panel status confirmed `panelLoaded: false`, `openPanels: 0`; warm helper timed separately. |
 
 ## Remaining practical limits
 
